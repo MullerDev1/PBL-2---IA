@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-from tensorflow.keras.models import load_model
+import tf_keras as keras
+# E na linha de carregar o modelo, use:
+modelo = keras.models.load_model('modelo_vulnerabilidade.h5')
 
 # Configuração Visual - Papel do Gabriel (Analista de Inovação)
 st.set_page_config(page_title="Gestão Inteligente - SLZ", page_icon="🏙️")
