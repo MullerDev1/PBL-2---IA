@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Dense
 # 1. Configuração Visual da Página
 st.set_page_config(page_title="IA Gestão Pública - SLZ", page_icon="🏙️", layout="wide")
 
-# CSS para melhorar o visual (agora com o parâmetro correto: unsafe_allow_html)
+# CSS para melhorar o visual
 st.markdown("""
     <style>
     .main { background-color: #f5f7f9; }
@@ -41,7 +41,7 @@ def carregar_modelo_treinado():
 
 modelo, modelo_carregado = carregar_modelo_treinado()
 
-# Carregar o Scaler
+# Carregar o Scaler (Normalizador)
 try:
     with open('scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
@@ -49,44 +49,47 @@ try:
 except:
     scaler_carregado = False
 
-# 3. Cabeçalho e Título
+# 3. Cabeçalho Principal
 st.title("🏙️ Sistema Inteligente de Monitoramento Social")
 st.markdown("---")
 
-# 4. Painel Lateral (Entradas)
+# 4. Painel Lateral (Inputs do Gestor)
 st.sidebar.header("⚙️ Parâmetros de Análise")
+st.sidebar.info("Ajuste os dados abaixo para simular a vulnerabilidade do setor.")
+
 renda = st.sidebar.number_input("Renda Média Domiciliar (R$)", min_value=0.0, value=1200.0)
 esgoto = st.sidebar.slider("Acesso a Saneamento (0 a 100%)", 0.0, 1.0, 0.50)
 alfabetismo = st.sidebar.slider("Taxa de Alfabetização (0 a 100%)", 0.0, 1.0, 0.80)
 
-# 5. Dashboard de Resultados
+# 5. Execução do Diagnóstico
 if st.button("🚀 EXECUTAR DIAGNÓSTICO DE IA"):
     if modelo_carregado and scaler_carregado:
-        # Preparação dos dados
+        # Preparação e Normalização
         colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
         dados_usuario = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
         dados_norm = scaler.transform(dados_usuario)
         
-        # Predição com a Rede Neural
+        # Predição (Forward Propagation)
         pred = modelo.predict(dados_norm)[0][0]
+        # Segurança para a barra de progresso (clip entre 0 e 1)
         probabilidade = float(np.clip(pred, 0.0, 1.0))
         perc = probabilidade * 100
 
         st.markdown("### 📊 Resultado do Diagnóstico")
         
         # Métricas em destaque
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
-        c2.metric("Saneamento", f"{esgoto*100:.1f}%")
-        c3.metric("Alfabetização", f"{alfabetismo*100:.1f}%")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Renda Analisada", f"R$ {renda:,.2f}")
+        m2.metric("Saneamento", f"{esgoto*100:.1f}%")
+        m3.metric("Alfabetização", f"{alfabetismo*100:.1f}%")
 
         st.markdown("---")
 
-        # Layout da Barra de Risco
+        # Layout Visual de Risco
         col_bar, col_status = st.columns([2, 1])
         
         with col_bar:
-            st.write(f"**Índice de Vulnerabilidade:** {perc:.2f}%")
+            st.write(f"**Índice de Vulnerabilidade Social:** {perc:.2f}%")
             st.progress(probabilidade)
 
         with col_status:
@@ -95,13 +98,13 @@ if st.button("🚀 EXECUTAR DIAGNÓSTICO DE IA"):
             else:
                 st.success("✅ SITUAÇÃO ESTÁVEL")
 
-        # Sugestão de IA Explicável
-        st.info(f"**Análise do Modelo:** O sistema calculou um score de **{perc:.2f}%**. " + 
-                ("Este setor deve ser priorizado para obras de infraestrutura sanitária." if perc > 50 else 
-                 "Os indicadores sugerem resiliência social no setor."))
+        # Texto Explicativo Dinâmico
+        mensagem = "ALERTA: Este setor deve ser priorizado para intervenção imediata da prefeitura." if perc > 50 else "NOTA: Os indicadores sugerem resiliência social no setor analisado."
+        st.info(f"**Análise Técnica:** {mensagem}")
             
     else:
-        st.error("Erro: Verifique se os arquivos 'modelo_pesos.weights.h5' e 'scaler.pkl' estão no seu GitHub.")
+        st.error("Erro Técnico: Verifique se os arquivos 'modelo_pesos.weights.h5' e 'scaler.pkl' estão no seu GitHub.")
 
+# 6. Rodapé (Cuidado para não cortar esta parte ao copiar!)
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Protótipo Func
+st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional - São Luís")
