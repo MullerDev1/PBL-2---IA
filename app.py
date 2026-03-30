@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
-import plotly.graph_objects as go # Para o gráfico de colunas finas
+import plotly.graph_objects as go
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 
@@ -67,7 +67,6 @@ if st.button("🚀 GERAR RELATÓRIO"):
         # Cabeçalho do Relatório
         st.markdown(f"## 📋 Relatório de Impacto: {bairro_selecionado}")
         
-        # Métricas
         c1, c2, c3 = st.columns(3)
         c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
         c2.metric("Saneamento", f"{esgoto*100:.1f}%")
@@ -75,33 +74,40 @@ if st.button("🚀 GERAR RELATÓRIO"):
 
         st.markdown("---")
 
-        # Gráfico de Níveis com colunas finas (Plotly)
+        # Gráfico de Níveis (Colunas Finas)
         st.write("### 📊 Níveis dos Indicadores (%)")
-        
         fig = go.Figure(data=[
             go.Bar(
                 x=['Poder de Renda', 'Saneamento', 'Educação'],
                 y=[float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)],
-                width=0.3, # Deixa a coluna bem mais fina
+                width=0.25,
                 marker_color='#007BFF'
             )
         ])
-        
-        fig.update_layout(
-            height=400,
-            yaxis=dict(range=[0, 100]),
-            margin=dict(l=20, r=20, t=20, b=20),
-            template="simple_white"
-        )
-        
+        fig.update_layout(height=350, yaxis=dict(range=[0, 100]), template="simple_white", margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")
 
-        # Diagnóstico de Risco
-        st.write(f"**Risco Calculado: {perc:.2f}%**")
+        # SEÇÃO DO RISCO COM FONTE GRANDE E MARCADORES
+        # Texto com fonte aumentada
+        st.markdown(f"<h1 style='text-align: center; color: #1E1E1E; font-size: 42px;'>Risco Calculado: {perc:.2f}%</h1>", unsafe_allow_html=True)
+        
+        # Barra de Progresso
         st.progress(probabilidade)
 
+        # Marcadores (Legenda abaixo da barra)
+        m1, m2, m3 = st.columns([40, 30, 30])
+        with m1:
+            st.markdown("<p style='color: #28a745; font-weight: bold;'>🟢 Estável (0-40%)</p>", unsafe_allow_html=True)
+        with m2:
+            st.markdown("<p style='color: #ffc107; font-weight: bold; text-align: center;'>🟡 Médio (40-70%)</p>", unsafe_allow_html=True)
+        with m3:
+            st.markdown("<p style='color: #dc3545; font-weight: bold; text-align: right;'>🔴 Vulnerável (70-100%)</p>", unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Diagnóstico de Risco
         if perc > 70:
             st.error(f"🚨 **RISCO CRÍTICO EM {bairro_selecionado.upper()}**")
         elif 40 <= perc <= 70:
@@ -112,6 +118,6 @@ if st.button("🚀 GERAR RELATÓRIO"):
     else:
         st.error("Erro: Arquivos técnicos não carregados.")
 
-# 6. Rodapé Final (Exatamente como solicitado)
+# 6. Rodapé Final
 st.markdown("---")
 st.caption("PBL 2 - Inteligência Artificial - São Luís")
