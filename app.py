@@ -104,4 +104,4 @@ if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
 
 # 6. Rodapé Atualizado
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional - São Luís")
+st.caption("PBL 2 - Inteligência Artificial - São Luís")
