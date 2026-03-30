@@ -6,17 +6,19 @@ import os
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 
-# 1. Configuração da Página
-st.set_page_config(page_title="IA Gestão Pública - SLZ", page_icon="🏙️", layout="wide")
+# 1. Configuração da Página (Layout Wide para caber os gráficos)
+st.set_page_config(page_title="IA Social - São Luís", page_icon="🏙️", layout="wide")
 
+# CSS para Estilização
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3.5em; background-color: #007BFF; color: white; font-weight: bold; }
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 8px; height: 3.5em; background-color: #007BFF; color: white; font-weight: bold; }
+    .metric-container { background-color: white; padding: 15px; border-radius: 10px; border: 1px solid #e0e0e0; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. IA - Reconstrução (Mesma lógica estável)
+# 2. Carregamento Seguro do Modelo (Arquitetura Manual + Pesos)
 def carregar_modelo_treinado():
     model = Sequential([
         Dense(12, activation='relu', input_shape=(3,)), 
@@ -31,6 +33,7 @@ def carregar_modelo_treinado():
 
 modelo, modelo_carregado = carregar_modelo_treinado()
 
+# Carregar o Scaler
 try:
     with open('scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
@@ -38,66 +41,75 @@ try:
 except:
     scaler_carregado = False
 
-# 3. Cabeçalho
-st.title("🏙️ Sistema Inteligente de Monitoramento Social")
+# 3. Cabeçalho e Título
+st.title("🏙️ Inteligência Artificial Aplicada à Gestão Social")
+st.markdown("Monitoramento de Vulnerabilidade em Setores Censitários de São Luís - MA")
 st.markdown("---")
 
-# 4. Painel Lateral
-st.sidebar.header("⚙️ Parâmetros de Análise")
+# 4. Sidebar de Entrada (Parâmetros)
+st.sidebar.header("⚙️ Entrada de Dados")
+st.sidebar.markdown("Ajuste os indicadores do setor:")
 renda = st.sidebar.number_input("Renda Média Domiciliar (R$)", min_value=0.0, value=1200.0)
 esgoto = st.sidebar.slider("Acesso a Saneamento (0-100%)", 0.0, 1.0, 0.50)
 alfabetismo = st.sidebar.slider("Taxa de Alfabetização (0-100%)", 0.0, 1.0, 0.80)
 
-# 5. Dashboard
-if st.button("🚀 EXECUTAR DIAGNÓSTICO DE IA"):
+# 5. Processamento e Abas de Visualização
+if st.button("🚀 EXECUTAR DIAGNÓSTICO MULTIDIMENSIONAL"):
     if modelo_carregado and scaler_carregado:
+        # Preparação dos Dados
         colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
-        dados_usuario = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
-        dados_norm = scaler.transform(dados_usuario)
+        dados_input = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
+        dados_norm = scaler.transform(dados_input)
         
+        # Predição
         pred = modelo.predict(dados_norm)[0][0]
         probabilidade = float(np.clip(pred, 0.0, 1.0))
         perc = probabilidade * 100
 
-        # --- NOVA ÁREA VISUAL ---
-        st.markdown("### 📊 Relatório de Vulnerabilidade")
+        # Métrica Principal de Risco
+        st.markdown(f"### Índice de Risco Social: `{perc:.2f}%`")
+        st.progress(probabilidade)
         
-        # Métricas no topo
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Renda Analisada", f"R$ {renda:,.2f}")
-        m2.metric("Saneamento", f"{esgoto*100:.0f}%")
-        m3.metric("Alfabetização", f"{alfabetismo*100:.0f}%")
-
         st.markdown("---")
+        
+        # CRIAÇÃO DAS 3 POSSIBILIDADES (ABAS)
+        aba1, aba2, aba3 = st.tabs(["📊 Gráfico de Barras", "📈 Gráfico de Área", "📋 Diagnóstico Executivo"])
 
-        # Divisão em duas colunas: Gráfico à esquerda, Status à direita
-        col_graf, col_status = st.columns([1.5, 1])
+        # Preparando os dados para os gráficos
+        chart_data = pd.DataFrame({
+            'Indicador': ['Renda (Normalizada)', 'Saneamento', 'Educação'],
+            'Nível (%)': [float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)]
+        }).set_index('Indicador')
 
-        with col_graf:
-            st.write("**Perfil de Desenvolvimento do Setor (0 a 100%)**")
-            # Criando um gráfico de barras simples com Streamlit
-            chart_data = pd.DataFrame({
-                'Indicador': ['Renda (Normalizada)', 'Saneamento', 'Educação'],
-                'Nível (%)': [dados_norm[0][0] * 100, esgoto * 100, alfabetismo * 100]
-            }).set_index('Indicador')
-            
+        with aba1:
+            st.write("**Comparativo de Indicadores (Qual fator é mais crítico?)**")
             st.bar_chart(chart_data)
+            st.caption("O Gráfico de Barras facilita a identificação direta do ponto fraco do setor.")
 
-        with col_status:
-            st.write(f"**Índice Final de Risco: {perc:.2f}%**")
-            st.progress(probabilidade)
+        with aba2:
+            st.write("**Volume de Cobertura Social**")
+            st.area_chart(chart_data)
+            st.caption("O Gráfico de Área demonstra visualmente o 'preenchimento' dos direitos básicos no setor.")
+
+        with aba3:
+            st.write("**Resumo Executivo para Tomada de Decisão**")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.metric("Renda", f"R$ {renda:,.2f}")
+            with c2:
+                st.metric("Esgoto", f"{esgoto*100:.0f}%")
+            with c3:
+                st.metric("Educação", f"{alfabetismo*100:.0f}%")
             
             if perc > 50:
-                st.error("🚨 ALTA VULNERABILIDADE")
-                st.markdown("**Recomendação:** Intervenção em infraestrutura e apoio financeiro.")
+                st.error(f"**Veredito:** ALTA VULNERABILIDADE ({perc:.2f}%)")
+                st.info("Ação Sugerida: Priorizar este setor no plano de metas de saneamento e assistência básica.")
             else:
-                st.success("✅ SITUAÇÃO ESTÁVEL")
-                st.markdown("**Recomendação:** Manutenção e programas educacionais.")
+                st.success(f"**Veredito:** SITUAÇÃO ESTÁVEL ({perc:.2f}%)")
+                st.info("Ação Sugerida: Manutenção preventiva dos serviços públicos atuais.")
 
-        st.info(f"O modelo analisou que este setor tem um risco de {perc:.2f}% baseado nos pesos treinados via Backpropagation.")
-            
     else:
-        st.error("Erro: Arquivos não encontrados no GitHub.")
+        st.error("Erro: Arquivos 'modelo_pesos.weights.h5' ou 'scaler.pkl' ausentes no repositório.")
 
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional - São Luís")
+st.caption("PBL 2 - Inteligência Artificial | Protótipo Desenvolvido por Gabriel Carvalho")
