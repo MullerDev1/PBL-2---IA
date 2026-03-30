@@ -52,7 +52,7 @@ esgoto = st.sidebar.slider("Nível de Saneamento", 0.0, 1.0, 0.50)
 alfabetismo = st.sidebar.slider("Taxa de Alfabetização", 0.0, 1.0, 0.80)
 
 # 5. Dashboard de Diagnóstico
-    if st.button("🚀 PARA TATIANUS"):
+    if st.button("GERAR RELATÓRIO"):
     if modelo_carregado and scaler_carregado:
         # Predição
         colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
