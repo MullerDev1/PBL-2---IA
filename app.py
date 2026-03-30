@@ -3,14 +3,13 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
-import plotly.express as px  # Para o gráfico de pizza
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 
 # 1. Configuração da Página
-st.set_page_config(page_title="IA Social - Resumo", page_icon="🏙️", layout="centered")
+st.set_page_config(page_title="IA Social - São Luís", page_icon="🏙️", layout="wide")
 
-# 2. IA - Reconstrução
+# 2. IA - Reconstrução da Arquitetura
 def carregar_modelo_treinado():
     model = Sequential([
         Dense(12, activation='relu', input_shape=(3,)), 
@@ -32,65 +31,84 @@ try:
 except:
     scaler_carregado = False
 
-# 3. Cabeçalho Minimalista
-st.title("🏙️ Diagnóstico de Vulnerabilidade")
-st.markdown("Análise simplificada para tomada de decisão imediata.")
+# 3. Título Principal
+st.title("🏙️ Diagnóstico de Vulnerabilidade Social")
+st.markdown("Análise preditiva por setor para suporte à gestão pública municipal.")
 st.markdown("---")
 
-# 4. Sidebar de Entrada
-st.sidebar.header("⚙️ Parâmetros")
-renda = st.sidebar.number_input("Renda Média (R$)", min_value=0.0, value=1200.0)
-esgoto = st.sidebar.slider("Saneamento", 0.0, 1.0, 0.50)
-alfabetismo = st.sidebar.slider("Educação", 0.0, 1.0, 0.80)
+# 4. Painel Lateral (Sidebar)
+st.sidebar.header("📍 Localização e Dados")
 
-# 5. Resumo Executivo
-if st.button("🚀 GERAR RESUMO EXECUTIVO"):
+# Campo de escolher o bairro
+lista_bairros = [
+    "Coroadinho", "Cidade Operária", "Vila Embratel", "Anjo da Guarda", 
+    "Centro", "Renascença", "Turu", "Cohatrac", "Vila Luizão", "Bairro de Fátima"
+]
+bairro_selecionado = st.sidebar.selectbox("Selecione o Bairro/Setor:", lista_bairros)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Indicadores do Setor")
+renda = st.sidebar.number_input("Renda Média Domiciliar (R$)", min_value=0.0, value=1200.0)
+esgoto = st.sidebar.slider("Nível de Saneamento", 0.0, 1.0, 0.50)
+alfabetismo = st.sidebar.slider("Taxa de Alfabetização", 0.0, 1.0, 0.80)
+
+# 5. Dashboard de Diagnóstico
+if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
     if modelo_carregado and scaler_carregado:
         # Predição
         colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
-        dados_norm = scaler.transform(pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas))
-        probabilidade = float(np.clip(modelo.predict(dados_norm)[0][0], 0.0, 1.0))
-        perc_vulneravel = probabilidade * 100
-        perc_estavel = 100 - perc_vulneravel
+        dados_input = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
+        dados_norm = scaler.transform(dados_input)
+        
+        pred = modelo.predict(dados_norm)[0][0]
+        probabilidade = float(np.clip(pred, 0.0, 1.0))
+        perc = probabilidade * 100
 
+        # Cabeçalho do Relatório com o Nome do Bairro
+        st.markdown(f"## 📋 Relatório de Impacto: {bairro_selecionado}")
+        
         # Métricas de Resumo
-        st.markdown("### 📋 Resumo do Setor")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Renda", f"R$ {renda:,.2f}")
-        c2.metric("Saneamento", f"{esgoto*100:.0f}%")
-        c3.metric("Educação", f"{alfabetismo*100:.0f}%")
+        c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
+        c2.metric("Saneamento", f"{esgoto*100:.1f}%")
+        c3.metric("Educação", f"{alfabetismo*100:.1f}%")
 
         st.markdown("---")
 
-        # Gráfico de Pizza (Composição do Risco)
-        st.write("**Distribuição da Probabilidade de Risco**")
+        # Gráfico de Níveis (Barras)
+        st.write("### 📊 Gráfico de Níveis dos Indicadores")
         
-        df_pizza = pd.DataFrame({
-            "Status": ["Risco/Vulnerabilidade", "Estabilidade Social"],
-            "Porcentagem": [perc_vulneravel, perc_estavel]
-        })
+        # Preparando dados para o gráfico de barras
+        # Normalizamos a renda para 0-100 para comparação visual justa
+        niveis_data = pd.DataFrame({
+            'Indicador': ['Poder de Renda', 'Cobertura Sanitária', 'Nível Educacional'],
+            'Nível (%)': [float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)]
+        }).set_index('Indicador')
         
-        fig = px.pie(
-            df_pizza, 
-            values='Porcentagem', 
-            names='Status', 
-            color='Status',
-            color_discrete_map={'Risco/Vulnerabilidade': '#ef5350', 'Estabilidade Social': '#66bb6a'},
-            hole=0.4  # Transforma em gráfico de rosca (mais moderno)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        st.bar_chart(niveis_data)
 
-        # Veredito Final
-        if perc_vulneravel > 50:
-            st.error(f"**Veredito:** ALTA VULNERABILIDADE DETECTADA ({perc_vulneravel:.2f}%)")
-            st.warning("⚠️ Prioridade máxima para intervenção do poder público.")
-        else:
-            st.success(f"**Veredito:** SETOR EM CONDIÇÃO ESTÁVEL ({perc_vulneravel:.2f}%)")
-            st.info("✅ Manter monitoramento e serviços básicos.")
+        st.markdown("---")
 
+        # Veredito Final da IA
+        col_risk, col_msg = st.columns([1, 2])
+        
+        with col_risk:
+            st.write(f"**Risco Calculado pela IA:**")
+            st.header(f"{perc:.2f}%")
+            st.progress(probabilidade)
+
+        with col_msg:
+            if perc > 50:
+                st.error(f"🚨 **ALERTA DE VULNERABILIDADE EM {bairro_selecionado.upper()}**")
+                st.markdown("O modelo identificou que este setor necessita de intervenção prioritária em políticas públicas.")
+            else:
+                st.success(f"✅ **SITUAÇÃO ESTÁVEL EM {bairro_selecionado.upper()}**")
+                st.markdown("Os indicadores sugerem uma condição social resiliente para este setor.")
+
+        st.info(f"Análise realizada via Rede Neural MLP com base nos pesos treinados para a região de São Luís.")
+            
     else:
-        st.error("Erro: Arquivos não encontrados no GitHub.")
+        st.error("Erro: Arquivos de pesos ou scaler não encontrados no GitHub.")
 
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Analista: Gabriel Carvalho")
+st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional | Gabriel Carvalho")
