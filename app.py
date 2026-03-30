@@ -3,23 +3,14 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+import plotly.express as px  # Para o gráfico de pizza
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 
-# 1. Configuração de Layout e Estilo
-st.set_page_config(page_title="IA Social - São Luís", page_icon="🏙️", layout="wide")
+# 1. Configuração da Página
+st.set_page_config(page_title="IA Social - Resumo", page_icon="🏙️", layout="centered")
 
-st.markdown("""
-    <style>
-    .main { background-color: #f8f9fa; }
-    .stButton>button { 
-        width: 100%; border-radius: 8px; height: 3.5em; 
-        background-color: #007BFF; color: white; font-weight: bold; 
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# 2. IA - Reconstrução da Arquitetura
+# 2. IA - Reconstrução
 def carregar_modelo_treinado():
     model = Sequential([
         Dense(12, activation='relu', input_shape=(3,)), 
@@ -41,71 +32,65 @@ try:
 except:
     scaler_carregado = False
 
-# 3. Interface e Inputs
-st.title("🏙️ Sistema de Monitoramento de Vulnerabilidade")
-st.markdown("Diagnóstico via Redes Neurais para Apoio à Gestão Pública")
+# 3. Cabeçalho Minimalista
+st.title("🏙️ Diagnóstico de Vulnerabilidade")
+st.markdown("Análise simplificada para tomada de decisão imediata.")
 st.markdown("---")
 
-st.sidebar.header("⚙️ Parâmetros de Entrada")
+# 4. Sidebar de Entrada
+st.sidebar.header("⚙️ Parâmetros")
 renda = st.sidebar.number_input("Renda Média (R$)", min_value=0.0, value=1200.0)
-esgoto = st.sidebar.slider("Acesso a Saneamento", 0.0, 1.0, 0.50)
-alfabetismo = st.sidebar.slider("Taxa de Alfabetização", 0.0, 1.0, 0.80)
+esgoto = st.sidebar.slider("Saneamento", 0.0, 1.0, 0.50)
+alfabetismo = st.sidebar.slider("Educação", 0.0, 1.0, 0.80)
 
-# 5. Lógica e Dashboards
-if st.button("🚀 EXECUTAR DIAGNÓSTICO"):
+# 5. Resumo Executivo
+if st.button("🚀 GERAR RESUMO EXECUTIVO"):
     if modelo_carregado and scaler_carregado:
-        # Processamento
+        # Predição
         colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
-        dados_raw = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
-        dados_norm = scaler.transform(dados_raw)
-        
-        pred = modelo.predict(dados_norm)[0][0]
-        probabilidade = float(np.clip(pred, 0.0, 1.0))
-        perc = probabilidade * 100
+        dados_norm = scaler.transform(pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas))
+        probabilidade = float(np.clip(modelo.predict(dados_norm)[0][0], 0.0, 1.0))
+        perc_vulneravel = probabilidade * 100
+        perc_estavel = 100 - perc_vulneravel
 
-        # Métrica de Cabeçalho
-        st.markdown(f"### Índice de Vulnerabilidade Social: `{perc:.2f}%`")
-        st.progress(probabilidade)
+        # Métricas de Resumo
+        st.markdown("### 📋 Resumo do Setor")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Renda", f"R$ {renda:,.2f}")
+        c2.metric("Saneamento", f"{esgoto*100:.0f}%")
+        c3.metric("Educação", f"{alfabetismo*100:.0f}%")
+
         st.markdown("---")
+
+        # Gráfico de Pizza (Composição do Risco)
+        st.write("**Distribuição da Probabilidade de Risco**")
         
-        # 4 ABAS DE VISUALIZAÇÃO
-        aba1, aba2, aba3, aba4 = st.tabs(["📊 Barras", "📉 Linhas", "📈 Área", "📋 Resumo"])
+        df_pizza = pd.DataFrame({
+            "Status": ["Risco/Vulnerabilidade", "Estabilidade Social"],
+            "Porcentagem": [perc_vulneravel, perc_estavel]
+        })
+        
+        fig = px.pie(
+            df_pizza, 
+            values='Porcentagem', 
+            names='Status', 
+            color='Status',
+            color_discrete_map={'Risco/Vulnerabilidade': '#ef5350', 'Estabilidade Social': '#66bb6a'},
+            hole=0.4  # Transforma em gráfico de rosca (mais moderno)
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
 
-        # Dados para os gráficos
-        chart_data = pd.DataFrame({
-            'Indicador': ['Renda', 'Saneamento', 'Educação'],
-            'Nível (%)': [float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)]
-        }).set_index('Indicador')
+        # Veredito Final
+        if perc_vulneravel > 50:
+            st.error(f"**Veredito:** ALTA VULNERABILIDADE DETECTADA ({perc_vulneravel:.2f}%)")
+            st.warning("⚠️ Prioridade máxima para intervenção do poder público.")
+        else:
+            st.success(f"**Veredito:** SETOR EM CONDIÇÃO ESTÁVEL ({perc_vulneravel:.2f}%)")
+            st.info("✅ Manter monitoramento e serviços básicos.")
 
-        with aba1:
-            st.write("**Comparativo de Volume**")
-            st.bar_chart(chart_data)
-
-        with aba2:
-            st.write("**Perfil de Oscilação dos Indicadores**")
-            st.line_chart(chart_data)
-            st.caption("O gráfico de linhas ajuda a identificar quedas bruscas em indicadores específicos.")
-
-        with aba3:
-            st.write("**Preenchimento de Direitos Sociais**")
-            st.area_chart(chart_data)
-
-        with aba4:
-            st.write("**Diagnóstico Final**")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Renda", f"R$ {renda:,.2f}")
-            c2.metric("Saneamento", f"{esgoto*100:.0f}%")
-            c3.metric("Educação", f"{alfabetismo*100:.0f}%")
-            
-            if perc > 50:
-                st.error(f"**ALTA VULNERABILIDADE DETECTADA**")
-                st.info("A IA recomenda prioridade em investimentos de infraestrutura básica.")
-            else:
-                st.success(f"**SITUAÇÃO SOB CONTROLE**")
-                st.info("O setor apresenta indicadores estáveis de acordo com o modelo.")
-            
     else:
-        st.error("Erro: Arquivos de pesos ou scaler não encontrados no GitHub.")
+        st.error("Erro: Arquivos não encontrados no GitHub.")
 
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Protótipo de Gestão Social")
+st.caption("PBL 2 - Inteligência Artificial | Analista: Gabriel Carvalho")
