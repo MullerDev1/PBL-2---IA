@@ -76,12 +76,19 @@ if st.button("🚀 GERAR RELATÓRIO"):
 
         # Gráfico de Níveis (Colunas Finas)
         st.write("### 📊 Níveis dos Indicadores (%)")
+        
+        # Define as cores das colunas com base no nível (OPCIONAL)
+        # Se preferir, pode usar uma cor fixa. Aqui, usei cores dinâmicas.
+        cores_colunas = ['#28a745' if float(dados_norm[0][0] * 100) > 40 else '#dc3545',
+                         '#28a745' if float(esgoto * 100) > 40 else '#dc3545',
+                         '#28a745' if float(alfabetismo * 100) > 40 else '#dc3545']
+        
         fig = go.Figure(data=[
             go.Bar(
                 x=['Poder de Renda', 'Saneamento', 'Educação'],
                 y=[float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)],
                 width=0.25,
-                marker_color='#007BFF'
+                marker_color=cores_colunas # Aplica cores dinâmicas às colunas
             )
         ])
         fig.update_layout(height=350, yaxis=dict(range=[0, 100]), template="simple_white", margin=dict(l=20, r=20, t=20, b=20))
@@ -89,9 +96,17 @@ if st.button("🚀 GERAR RELATÓRIO"):
 
         st.markdown("---")
 
-        # SEÇÃO DO RISCO COM FONTE GRANDE E MARCADORES
-        # Texto com fonte aumentada
-        st.markdown(f"<h1 style='text-align: center; color: #1E1E1E; font-size: 42px;'>Risco Calculado: {perc:.2f}%</h1>", unsafe_allow_html=True)
+        # SEÇÃO DO RISCO COM FONTE GIGANTE E COR DINÂMICA
+        # Lógica de cor para o número
+        if perc > 70:
+            cor_risco = "#dc3545" # Vermelho
+        elif 40 <= perc <= 70:
+            cor_risco = "#ffc107" # Amarelo
+        else:
+            cor_risco = "#28a745" # Verde
+
+        # Texto com fonte aumentada e cor dinâmica
+        st.markdown(f"<h1 style='text-align: center; color: {cor_risco}; font-size: 52px; font-weight: bold;'>Risco Calculado: {perc:.2f}%</h1>", unsafe_allow_html=True)
         
         # Barra de Progresso
         st.progress(probabilidade)
@@ -99,21 +114,24 @@ if st.button("🚀 GERAR RELATÓRIO"):
         # Marcadores (Legenda abaixo da barra)
         m1, m2, m3 = st.columns([40, 30, 30])
         with m1:
-            st.markdown("<p style='color: #28a745; font-weight: bold;'>🟢 Estável (0-40%)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #28a745; font-weight: bold; font-size: 16px;'>🟢 Estável (0-40%)</p>", unsafe_allow_html=True)
         with m2:
-            st.markdown("<p style='color: #ffc107; font-weight: bold; text-align: center;'>🟡 Médio (40-70%)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #ffc107; font-weight: bold; font-size: 16px; text-align: center;'>🟡 Médio (40-70%)</p>", unsafe_allow_html=True)
         with m3:
-            st.markdown("<p style='color: #dc3545; font-weight: bold; text-align: right;'>🔴 Vulnerável (70-100%)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #dc3545; font-weight: bold; font-size: 16px; text-align: right;'>🔴 Vulnerável (70-100%)</p>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Diagnóstico de Risco
         if perc > 70:
             st.error(f"🚨 **RISCO CRÍTICO EM {bairro_selecionado.upper()}**")
+            st.warning("⚠️ Prioridade máxima para intervenção em políticas públicas.")
         elif 40 <= perc <= 70:
             st.warning(f"⚠️ **ATENÇÃO: RISCO MÉDIO EM {bairro_selecionado.upper()}**")
+            st.info("💡 Ação preventiva recomendada para monitorar indicadores de base.")
         else:
             st.success(f"✅ **SITUAÇÃO ESTÁVEL EM {bairro_selecionado.upper()}**")
+            st.info("✅ Manter monitoramento e serviços básicos.")
 
     else:
         st.error("Erro: Arquivos técnicos não carregados.")
