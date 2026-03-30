@@ -69,7 +69,7 @@ if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
         c1, c2, c3 = st.columns(3)
         c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
         c2.metric("Saneamento", f"{esgoto*100:.1f}%")
-        c3.metric("Educação", f"{alfabetismo*100:.0f}%")
+        c3.metric("Educação", f"{alfabetismo*100:.1f}%")
 
         st.markdown("---")
 
@@ -87,7 +87,6 @@ if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
         st.write(f"**Risco Calculado: {perc:.2f}%**")
         st.progress(probabilidade)
 
-        # Divisão por faixas de risco
         if perc > 70:
             st.error(f"🚨 **RISCO CRÍTICO: ALTA VULNERABILIDADE EM {bairro_selecionado.upper()}**")
             st.warning("Ação Imediata: Necessário plano de choque em infraestrutura e assistência.")
@@ -103,5 +102,6 @@ if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
     else:
         st.error("Erro: Verifique os arquivos no GitHub.")
 
+# 6. Rodapé Atualizado
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Analista: Gabriel Carvalho")
+st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional - São Luís")
