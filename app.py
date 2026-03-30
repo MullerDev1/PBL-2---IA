@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+import plotly.graph_objects as go # Para o gráfico de colunas finas
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 
@@ -31,7 +32,7 @@ try:
 except:
     scaler_carregado = False
 
-# 3. Título Principal
+# 3. Cabeçalho Principal
 st.title("🏙️ Diagnóstico de Vulnerabilidade Social")
 st.markdown("Análise preditiva por setor para suporte à gestão pública municipal.")
 st.markdown("---")
@@ -52,20 +53,21 @@ esgoto = st.sidebar.slider("Nível de Saneamento", 0.0, 1.0, 0.50)
 alfabetismo = st.sidebar.slider("Taxa de Alfabetização", 0.0, 1.0, 0.80)
 
 # 5. Dashboard de Diagnóstico
-    if st.button("GERAR RELATÓRIO"):
+if st.button("🚀 GERAR RELATÓRIO"):
     if modelo_carregado and scaler_carregado:
         # Predição
-        colunas = ['renda_media', 'esgoto_sanitario', 'escolaridade']
-        dados_input = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas)
+        colunas_nomes = ['renda_media', 'esgoto_sanitario', 'escolaridade']
+        dados_input = pd.DataFrame([[renda, esgoto, alfabetismo]], columns=colunas_nomes)
         dados_norm = scaler.transform(dados_input)
         
         pred = modelo.predict(dados_norm)[0][0]
         probabilidade = float(np.clip(pred, 0.0, 1.0))
         perc = probabilidade * 100
 
-        # Relatório
+        # Cabeçalho do Relatório
         st.markdown(f"## 📋 Relatório de Impacto: {bairro_selecionado}")
         
+        # Métricas
         c1, c2, c3 = st.columns(3)
         c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
         c2.metric("Saneamento", f"{esgoto*100:.1f}%")
@@ -73,35 +75,43 @@ alfabetismo = st.sidebar.slider("Taxa de Alfabetização", 0.0, 1.0, 0.80)
 
         st.markdown("---")
 
-        # Gráfico de Níveis
-        st.write("### 📊 Níveis dos Indicadores")
-        niveis_data = pd.DataFrame({
-            'Indicador': ['Poder de Renda', 'Cobertura Sanitária', 'Nível Educacional'],
-            'Nível (%)': [float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)]
-        }).set_index('Indicador')
-        st.bar_chart(niveis_data)
+        # Gráfico de Níveis com colunas finas (Plotly)
+        st.write("### 📊 Níveis dos Indicadores (%)")
+        
+        fig = go.Figure(data=[
+            go.Bar(
+                x=['Poder de Renda', 'Saneamento', 'Educação'],
+                y=[float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)],
+                width=0.3, # Deixa a coluna bem mais fina
+                marker_color='#007BFF'
+            )
+        ])
+        
+        fig.update_layout(
+            height=400,
+            yaxis=dict(range=[0, 100]),
+            margin=dict(l=20, r=20, t=20, b=20),
+            template="simple_white"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")
 
-        # Lógica de Diagnóstico em 3 Níveis
+        # Diagnóstico de Risco
         st.write(f"**Risco Calculado: {perc:.2f}%**")
         st.progress(probabilidade)
 
         if perc > 70:
-            st.error(f"🚨 **RISCO CRÍTICO: ALTA VULNERABILIDADE EM {bairro_selecionado.upper()}**")
-            st.warning("Ação Imediata: Necessário plano de choque em infraestrutura e assistência.")
+            st.error(f"🚨 **RISCO CRÍTICO EM {bairro_selecionado.upper()}**")
         elif 40 <= perc <= 70:
             st.warning(f"⚠️ **ATENÇÃO: RISCO MÉDIO EM {bairro_selecionado.upper()}**")
-            st.info("Ação Preventiva: O setor apresenta sinais de alerta. Recomenda-se reforço nas políticas de base.")
         else:
             st.success(f"✅ **SITUAÇÃO ESTÁVEL EM {bairro_selecionado.upper()}**")
-            st.write("Ação de Manutenção: Indicadores dentro da normalidade para o modelo treinado.")
 
-        st.caption("Análise realizada via Rede Neural MLP - Backpropagation habilitado.")
-            
     else:
-        st.error("Erro: Verifique os arquivos no GitHub.")
+        st.error("Erro: Arquivos técnicos não carregados.")
 
-# 6. Rodapé Atualizado
+# 6. Rodapé Final (Exatamente como solicitado)
 st.markdown("---")
 st.caption("PBL 2 - Inteligência Artificial - São Luís")
