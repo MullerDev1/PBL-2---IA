@@ -39,7 +39,6 @@ st.markdown("---")
 # 4. Painel Lateral (Sidebar)
 st.sidebar.header("📍 Localização e Dados")
 
-# Campo de escolher o bairro
 lista_bairros = [
     "Coroadinho", "Cidade Operária", "Vila Embratel", "Anjo da Guarda", 
     "Centro", "Renascença", "Turu", "Cohatrac", "Vila Luizão", "Bairro de Fátima"
@@ -64,51 +63,45 @@ if st.button("🚀 GERAR RELATÓRIO EXECUTIVO"):
         probabilidade = float(np.clip(pred, 0.0, 1.0))
         perc = probabilidade * 100
 
-        # Cabeçalho do Relatório com o Nome do Bairro
+        # Relatório
         st.markdown(f"## 📋 Relatório de Impacto: {bairro_selecionado}")
         
-        # Métricas de Resumo
         c1, c2, c3 = st.columns(3)
         c1.metric("Renda Analisada", f"R$ {renda:,.2f}")
         c2.metric("Saneamento", f"{esgoto*100:.1f}%")
-        c3.metric("Educação", f"{alfabetismo*100:.1f}%")
+        c3.metric("Educação", f"{alfabetismo*100:.0f}%")
 
         st.markdown("---")
 
-        # Gráfico de Níveis (Barras)
-        st.write("### 📊 Gráfico de Níveis dos Indicadores")
-        
-        # Preparando dados para o gráfico de barras
-        # Normalizamos a renda para 0-100 para comparação visual justa
+        # Gráfico de Níveis
+        st.write("### 📊 Níveis dos Indicadores")
         niveis_data = pd.DataFrame({
             'Indicador': ['Poder de Renda', 'Cobertura Sanitária', 'Nível Educacional'],
             'Nível (%)': [float(dados_norm[0][0] * 100), float(esgoto * 100), float(alfabetismo * 100)]
         }).set_index('Indicador')
-        
         st.bar_chart(niveis_data)
 
         st.markdown("---")
 
-        # Veredito Final da IA
-        col_risk, col_msg = st.columns([1, 2])
-        
-        with col_risk:
-            st.write(f"**Risco Calculado pela IA:**")
-            st.header(f"{perc:.2f}%")
-            st.progress(probabilidade)
+        # Lógica de Diagnóstico em 3 Níveis
+        st.write(f"**Risco Calculado: {perc:.2f}%**")
+        st.progress(probabilidade)
 
-        with col_msg:
-            if perc > 50:
-                st.error(f"🚨 **ALERTA DE VULNERABILIDADE EM {bairro_selecionado.upper()}**")
-                st.markdown("O modelo identificou que este setor necessita de intervenção prioritária em políticas públicas.")
-            else:
-                st.success(f"✅ **SITUAÇÃO ESTÁVEL EM {bairro_selecionado.upper()}**")
-                st.markdown("Os indicadores sugerem uma condição social resiliente para este setor.")
+        # Divisão por faixas de risco
+        if perc > 70:
+            st.error(f"🚨 **RISCO CRÍTICO: ALTA VULNERABILIDADE EM {bairro_selecionado.upper()}**")
+            st.warning("Ação Imediata: Necessário plano de choque em infraestrutura e assistência.")
+        elif 40 <= perc <= 70:
+            st.warning(f"⚠️ **ATENÇÃO: RISCO MÉDIO EM {bairro_selecionado.upper()}**")
+            st.info("Ação Preventiva: O setor apresenta sinais de alerta. Recomenda-se reforço nas políticas de base.")
+        else:
+            st.success(f"✅ **SITUAÇÃO ESTÁVEL EM {bairro_selecionado.upper()}**")
+            st.write("Ação de Manutenção: Indicadores dentro da normalidade para o modelo treinado.")
 
-        st.info(f"Análise realizada via Rede Neural MLP com base nos pesos treinados para a região de São Luís.")
+        st.caption("Análise realizada via Rede Neural MLP - Backpropagation habilitado.")
             
     else:
-        st.error("Erro: Arquivos de pesos ou scaler não encontrados no GitHub.")
+        st.error("Erro: Verifique os arquivos no GitHub.")
 
 st.markdown("---")
-st.caption("PBL 2 - Inteligência Artificial | Protótipo Funcional | Gabriel Carvalho")
+st.caption("PBL 2 - Inteligência Artificial | Analista: Gabriel Carvalho")
